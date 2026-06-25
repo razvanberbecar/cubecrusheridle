@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Cube Crusher Idle</title>
+
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+
+    <style>
+      :root {
+        --neon-cyan: #00ffff;
+        --panel-bg: rgba(12, 12, 20, 0.92);
+        --accent: #ff007f;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0a0a0f;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+      }
+
+      #app {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #game-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      #top-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: clamp(8px, 2vw, 16px) clamp(12px, 3vw, 24px);
+        pointer-events: none;
+      }
+
+      #money-display {
+        font-size: clamp(20px, 5vw, 38px);
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 0 12px var(--neon-cyan), 0 2px 4px rgba(0, 0, 0, 0.8);
+        letter-spacing: 0.5px;
+        transition: color 0.1s ease, text-shadow 0.1s ease;
+      }
+
+      #money-display.crit {
+        color: #ffff00;
+        text-shadow: 0 0 22px #ffff00, 0 0 8px #ffea00,
+          0 2px 4px rgba(0, 0, 0, 0.8);
+      }
+
+      #boss-health {
+        position: fixed;
+        z-index: 16;
+        width: clamp(80px, 22vw, 140px);
+        height: 14px;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.65);
+        border: 1px solid rgba(255, 80, 80, 0.6);
+        border-radius: 8px;
+        overflow: hidden;
+        display: none;
+        pointer-events: none;
+        box-shadow: 0 0 12px rgba(255, 0, 0, 0.45);
+      }
+      #boss-health-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #ff4040, #8b0000);
+        transition: width 0.15s ease;
+      }
+
+      .top-buttons {
+        display: flex;
+        gap: clamp(6px, 1.5vw, 12px);
+        pointer-events: auto;
+      }
+
+      .icon-btn {
+        font-size: clamp(16px, 4vw, 26px);
+        background: var(--panel-bg);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #fff;
+        border-radius: 12px;
+        padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2.5vw, 16px);
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: transform 0.1s ease, box-shadow 0.2s ease;
+      }
+      .icon-btn:active {
+        transform: scale(0.92);
+      }
+
+      #rebirth-btn {
+        display: none;
+        font-size: clamp(13px, 3.4vw, 22px);
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #fff;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 215, 0, 0.28),
+          rgba(255, 140, 0, 0.22)
+        );
+        border: 2px solid #ffd700;
+        border-radius: 12px;
+        padding: clamp(5px, 1.4vw, 9px) clamp(10px, 2.4vw, 16px);
+        cursor: pointer;
+        text-shadow: 0 0 8px #ffd700;
+        backdrop-filter: blur(6px);
+        animation: rebirthPulse 1s ease-in-out infinite;
+      }
+      #rebirth-btn:active {
+        transform: scale(0.94);
+      }
+      @keyframes rebirthPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 10px #ffd700, 0 0 4px #ff8c00;
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 0 28px #ffd700, 0 0 14px #ff8c00;
+          transform: scale(1.06);
+        }
+      }
+
+      #upgrade-panel {
+        position: fixed;
+        left: 50%;
+        bottom: 0;
+        transform: translate(-50%, 110%);
+        z-index: 20;
+        width: min(560px, 94vw);
+        background: var(--panel-bg);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: none;
+        border-radius: 20px 20px 0 0;
+        padding: clamp(14px, 3vw, 22px);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      #upgrade-panel.open {
+        transform: translate(-50%, 0);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: clamp(10px, 2vw, 16px);
+      }
+      .panel-header h2 {
+        font-size: clamp(15px, 3.5vw, 20px);
+        color: #fff;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      #close-panel {
+        font-size: 22px;
+        line-height: 1;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+      }
+
+      .upgrade-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 10px;
+        padding: clamp(10px, 2.5vw, 15px);
+        background: linear-gradient(
+          135deg,
+          rgba(0, 255, 255, 0.08),
+          rgba(255, 0, 127, 0.08)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        color: #fff;
+        cursor: pointer;
+        transition: transform 0.1s ease, border-color 0.2s ease,
+          opacity 0.2s ease;
+      }
+      .upgrade-btn:last-child {
+        margin-bottom: 0;
+      }
+      .upgrade-btn:not(:disabled):active {
+        transform: scale(0.98);
+      }
+      .upgrade-btn:not(:disabled):hover {
+        border-color: var(--neon-cyan);
+      }
+      .upgrade-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .up-info {
+        text-align: left;
+      }
+      .up-name {
+        font-size: clamp(13px, 3vw, 16px);
+        font-weight: 700;
+      }
+      .up-effect {
+        font-size: clamp(10px, 2.4vw, 12px);
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 2px;
+      }
+      .up-buy {
+        text-align: right;
+        white-space: nowrap;
+      }
+      .up-level {
+        font-size: clamp(11px, 2.6vw, 13px);
+        color: var(--neon-cyan);
+        font-weight: 700;
+      }
+      .up-cost {
+        font-size: clamp(12px, 3vw, 15px);
+        font-weight: 800;
+        margin-top: 2px;
+      }
+
+      #hint {
+        position: fixed;
+        left: 50%;
+        top: 62%;
+        transform: translate(-50%, -50%);
+        z-index: 15;
+        color: #fff;
+        font-size: clamp(16px, 4vw, 24px);
+        font-weight: 700;
+        text-shadow: 0 0 14px var(--accent), 0 2px 6px rgba(0, 0, 0, 0.9);
+        pointer-events: none;
+        text-align: center;
+        animation: pulse 1.1s ease-in-out infinite;
+        transition: opacity 0.4s ease;
+      }
+      #hint.hidden {
+        opacity: 0;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.85;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.12);
+          opacity: 1;
+        }
+      }
+
+      #rebirth-badge {
+        position: fixed;
+        left: clamp(8px, 2vw, 16px);
+        bottom: clamp(8px, 2vh, 16px);
+        z-index: 12;
+        display: none;
+        max-width: 48vw;
+        padding: 8px 10px;
+        background: rgba(12, 12, 20, 0.85);
+        border: 1px solid rgba(191, 0, 255, 0.5);
+        border-radius: 12px;
+        backdrop-filter: blur(6px);
+        pointer-events: none;
+      }
+      .rb-count {
+        color: #bf00ff;
+        font-weight: 800;
+        font-size: clamp(12px, 3vw, 15px);
+        text-shadow: 0 0 8px #bf00ff;
+      }
+      .rb-chip {
+        display: inline-block;
+        margin: 4px 4px 0 0;
+        padding: 2px 7px;
+        font-size: clamp(9px, 2.4vw, 11px);
+        color: #fff;
+        background: rgba(0, 255, 255, 0.12);
+        border: 1px solid rgba(0, 255, 255, 0.35);
+        border-radius: 8px;
+      }
+
+      #rebirth-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 5, 12, 0.93);
+        backdrop-filter: blur(5px);
+      }
+      #rebirth-overlay.show {
+        display: flex;
+      }
+      .rebirth-head {
+        text-align: center;
+        padding: 0 16px;
+        margin-bottom: clamp(6px, 2vh, 18px);
+      }
+      #rebirth-subtitle {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: clamp(12px, 3vw, 16px);
+        letter-spacing: 0.5px;
+      }
+
+      .web {
+        position: relative;
+        width: min(88vmin, 520px);
+        height: min(88vmin, 520px);
+        --radius: clamp(108px, 31vmin, 195px);
+      }
+      .web-line {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-top: -1px;
+        width: var(--radius);
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 255, 255, 0.55),
+          rgba(191, 0, 255, 0.1)
+        );
+        transform-origin: 0 50%;
+        transform: rotate(var(--angle));
+        pointer-events: none;
+      }
+      .web-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: clamp(72px, 18vmin, 110px);
+        height: clamp(72px, 18vmin, 110px);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: clamp(11px, 2.8vw, 15px);
+        letter-spacing: 1px;
+        color: #fff;
+        background: radial-gradient(
+          circle,
+          rgba(255, 0, 127, 0.35),
+          rgba(10, 10, 20, 0.92)
+        );
+        border: 2px solid #ff007f;
+        box-shadow: 0 0 26px #ff007f, inset 0 0 18px rgba(255, 0, 127, 0.5);
+        z-index: 2;
+      }
+      .web-node {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: clamp(74px, 19vmin, 116px);
+        height: clamp(74px, 19vmin, 116px);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) rotate(var(--angle))
+          translateX(var(--radius)) rotate(calc(-1 * var(--angle)));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 6px;
+        color: #fff;
+        cursor: pointer;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.12),
+          rgba(10, 10, 20, 0.95)
+        );
+        border: 2px solid var(--node-color, #00ffff);
+        box-shadow: 0 0 16px var(--node-color, #00ffff);
+        transition: box-shadow 0.2s ease, filter 0.12s ease;
+        z-index: 3;
+      }
+      .web-node:hover {
+        box-shadow: 0 0 30px var(--node-color, #00ffff);
+        filter: brightness(1.25);
+      }
+      .web-node:active {
+        filter: brightness(1.5);
+      }
+      .node-title {
+        font-weight: 800;
+        font-size: clamp(10px, 2.6vw, 13px);
+        line-height: 1.1;
+      }
+      .node-effect {
+        font-size: clamp(8px, 2.1vw, 11px);
+        color: rgba(255, 255, 255, 0.78);
+        margin-top: 3px;
+      }
+
+      #welcome-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #06060c;
+      }
+      #welcome-overlay.show {
+        display: flex;
+      }
+
+      #welcome-overlay::before {
+        content: '';
+        position: absolute;
+        inset: -25%;
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(0, 255, 255, 0.28),
+            transparent 40%
+          ),
+          radial-gradient(circle at 72% 62%, rgba(255, 0, 127, 0.24), transparent 45%),
+          radial-gradient(circle at 50% 82%, rgba(191, 0, 255, 0.22), transparent 50%);
+        filter: blur(22px);
+        animation: welcomeBg 14s ease-in-out infinite alternate;
+      }
+      @keyframes welcomeBg {
+        0% {
+          transform: translate(-3%, -2%) scale(1);
+          opacity: 0.8;
+        }
+        50% {
+          transform: translate(3%, 2%) scale(1.18);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-2%, 3%) scale(1.06);
+          opacity: 0.85;
+        }
+      }
+      .welcome-card {
+        position: relative;
+        z-index: 1;
+        max-width: min(560px, 92vw);
+        margin: 16px;
+        padding: clamp(22px, 5vw, 42px);
+        text-align: center;
+        background: rgba(10, 10, 18, 0.86);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        border-radius: 22px;
+        box-shadow: 0 0 50px rgba(0, 255, 255, 0.18),
+          inset 0 0 30px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(8px);
+        animation: welcomeCardIn 0.5s ease-out both;
+      }
+      @keyframes welcomeCardIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .welcome-card h1 {
+        font-size: clamp(22px, 6vw, 40px);
+        font-weight: 900;
+        letter-spacing: 2px;
+        line-height: 1.1;
+        color: #fff;
+        text-shadow: 0 0 18px #00ffff, 0 0 36px rgba(0, 255, 255, 0.5);
+        margin-bottom: clamp(14px, 3vh, 22px);
+      }
+      .welcome-body p {
+        font-size: clamp(13px, 3vw, 16px);
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.82);
+        margin-bottom: clamp(10px, 2vh, 14px);
+      }
+      .welcome-body p:last-child {
+        margin-bottom: clamp(16px, 3vh, 22px);
+        color: rgba(0, 255, 255, 0.85);
+        font-weight: 600;
+      }
+      .welcome-tip {
+        font-size: clamp(12px, 2.6vw, 14px);
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 0 auto clamp(20px, 4vh, 30px);
+        padding-top: clamp(12px, 2.5vh, 18px);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        max-width: 32ch;
+      }
+      #start-btn {
+        font-size: clamp(15px, 4vw, 20px);
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #06060c;
+        background: linear-gradient(135deg, #00ffff, #bf00ff);
+        border: none;
+        border-radius: 14px;
+        padding: clamp(12px, 2.5vw, 16px) clamp(24px, 6vw, 42px);
+        cursor: pointer;
+        box-shadow: 0 0 24px rgba(0, 255, 255, 0.5);
+        transition: transform 0.12s ease, box-shadow 0.2s ease;
+      }
+      #start-btn:hover {
+        box-shadow: 0 0 38px rgba(191, 0, 255, 0.7);
+      }
+      #start-btn:active {
+        transform: scale(0.95);
+      }
+
+      #boosts {
+        position: fixed;
+        left: clamp(8px, 2vw, 16px);
+        bottom: clamp(8px, 2vw, 16px);
+        z-index: 12;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+      }
+      .boost-btn {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--panel-bg);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #fff;
+        border-radius: 12px;
+        padding: clamp(6px, 1.5vw, 9px) clamp(9px, 2vw, 13px);
+        font-size: clamp(11px, 2.6vw, 14px);
+        font-weight: 700;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      }
+      .boost-btn:active {
+        transform: scale(0.94);
+      }
+      .boost-btn .boost-ad {
+        font-size: 0.72em;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        background: #ffd700;
+        color: #1a1a1a;
+        border-radius: 5px;
+        padding: 2px 5px;
+      }
+      .boost-btn.active {
+        cursor: default;
+        opacity: 0.9;
+        border-color: var(--accent);
+        box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+      }
+      .boost-btn.active .boost-ad {
+        background: var(--accent);
+      }
+
+      #fx-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 9;
+      }
+      .fx-pop {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        font-weight: 900;
+        font-size: clamp(16px, 3.4vw, 26px);
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+        white-space: nowrap;
+        animation: fxRise 0.9s ease-out forwards;
+      }
+      .fx-pop.crit {
+        color: #ffe24a;
+        font-size: clamp(20px, 4.4vw, 34px);
+        text-shadow: 0 0 14px rgba(255, 210, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7);
+      }
+      .fx-pop.gold {
+        color: #ffd700;
+        text-shadow: 0 0 14px rgba(255, 215, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7);
+      }
+      .fx-pop.boss {
+        color: #ff5252;
+        font-size: clamp(22px, 5vw, 38px);
+        text-shadow: 0 0 16px rgba(255, 60, 60, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7);
+      }
+      @keyframes fxRise {
+        0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+        18% { opacity: 1; transform: translate(-50%, -55%) scale(1.1); }
+        100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+      }
+
+      #combo {
+        position: fixed;
+        top: clamp(58px, 11vh, 86px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: none;
+        text-align: center;
+        font-weight: 900;
+        color: #fff;
+        text-shadow: 0 0 12px rgba(255, 120, 0, 0.7);
+        pointer-events: none;
+      }
+      #combo.show { display: block; }
+      #combo .combo-count {
+        font-size: clamp(20px, 5vw, 34px);
+        color: #ff9a3c;
+      }
+      #combo .combo-mult {
+        font-size: clamp(11px, 2.6vw, 14px);
+        color: rgba(255, 255, 255, 0.8);
+        letter-spacing: 1px;
+      }
+      #combo.bump { animation: comboBump 0.18s ease-out; }
+      @keyframes comboBump {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.22); }
+        100% { transform: translateX(-50%) scale(1); }
+      }
+
+      #settings-panel {
+        position: fixed;
+        top: clamp(50px, 9vh, 74px);
+        right: clamp(8px, 2vw, 16px);
+        z-index: 14;
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 18px;
+        background: rgba(10, 12, 20, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(6px);
+        min-width: 200px;
+      }
+      #settings-panel.open { display: flex; }
+      #settings-panel label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      #settings-panel input[type='range'] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+
+      #loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: radial-gradient(circle at 50% 40%, #15151f, #06060c 70%);
+        transition: opacity 0.5s ease;
+      }
+      #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+      #loading-overlay h1 {
+        font-size: clamp(20px, 6vw, 38px);
+        font-weight: 900;
+        letter-spacing: 2px;
+        color: #fff;
+        text-shadow: 0 0 18px #00ffff, 0 0 36px rgba(0, 255, 255, 0.5);
+        text-align: center;
+      }
+      .loading-bar {
+        width: clamp(180px, 60vw, 320px);
+        height: 10px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+      .loading-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 6px;
+        background: linear-gradient(90deg, #00ffff, #bf00ff);
+        transition: width 0.2s ease;
+      }
+
+      #rotate-overlay { display: none; }
+      @media (orientation: portrait) and (hover: none) and (pointer: coarse) {
+        #rotate-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 18px;
+          background: #06060c;
+          color: #fff;
+          text-align: center;
+          padding: 24px;
+        }
+        #rotate-overlay .rotate-icon {
+          font-size: 64px;
+          animation: rotateHint 1.8s ease-in-out infinite;
+        }
+        #rotate-overlay p {
+          font-size: clamp(15px, 4.5vw, 20px);
+          font-weight: 700;
+          max-width: 24ch;
+        }
+        #rotate-dismiss {
+          margin-top: 6px;
+          font-size: clamp(13px, 4vw, 16px);
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          color: #06060c;
+          background: linear-gradient(135deg, #00ffff, #bf00ff);
+          border: none;
+          border-radius: 12px;
+          padding: 12px 26px;
+          cursor: pointer;
+          box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+      }
+      #rotate-overlay.dismissed { display: none; }
+      @keyframes rotateHint {
+        0%, 100% { transform: rotate(-12deg); }
+        50% { transform: rotate(78deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading-overlay">
+      <h1>CUBE CRUSHER IDLE</h1>
+      <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+    </div>
+
+    <div id="rotate-overlay">
+      <div class="rotate-icon">📱</div>
+      <p>Rotate your device to landscape for the best view.</p>
+      <button id="rotate-dismiss">Play anyway →</button>
+    </div>
+
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+
+      <div id="top-bar">
+        <div id="money-display">$0</div>
+        <div class="top-buttons">
+          <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙</button>
+          <button class="icon-btn" id="mute-btn" aria-label="Mute">🔊</button>
+          <button id="rebirth-btn" aria-label="Rebirth">REBIRTH ✦</button>
+          <button class="icon-btn" id="open-panel" aria-label="Upgrades">
+            ⚙ Upgrades
+          </button>
+        </div>
+      </div>
+
+      <div id="settings-panel">
+        <label>Music
+          <input type="range" id="vol-music" min="0" max="100" value="100" />
+        </label>
+        <label>Sound FX
+          <input type="range" id="vol-sfx" min="0" max="100" value="100" />
+        </label>
+      </div>
+
+      <div id="combo">
+        <div class="combo-count"></div>
+        <div class="combo-mult"></div>
+      </div>
+
+      <div id="fx-layer"></div>
+
+      <div id="hint">Tap to crush!</div>
+
+      <div id="boss-health"><div id="boss-health-fill"></div></div>
+
+      <div id="upgrade-panel">
+        <div class="panel-header">
+          <h2>Upgrades</h2>
+          <button id="close-panel" aria-label="Close">✕</button>
+        </div>
+        <div id="upgrade-list"></div>
+      </div>
+
+      <div id="boosts">
+        <button class="boost-btn" id="boost-money">
+          <span class="boost-ad">AD</span>
+          <span class="boost-label">2× Money · 60s</span>
+        </button>
+        <button class="boost-btn" id="boost-golden">
+          <span class="boost-ad">AD</span>
+          <span class="boost-label">Golden Surge · 30s</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="welcome-overlay">
+      <div class="welcome-card">
+        <h1>THE PRESS NEVER SLEEPS</h1>
+        <div class="welcome-body">
+          <p>A mountain of cubes. One hydraulic press. Infinite money.</p>
+          <p>
+            Crush your way up from nothing. Unlock golden cubes worth 10×.
+            Survive boss cubes that hit back. And when you've crushed enough —
+            Rebirth. Reset everything, keep a permanent power, and go harder.
+          </p>
+          <p>The machine gets stronger every time you do.</p>
+        </div>
+        <p class="welcome-tip">
+          🖥️ Best played on a computer screen — or tilt your phone sideways
+          (landscape) for the full view.
+        </p>
+        <button id="start-btn">START CRUSHING</button>
+      </div>
+    </div>
+
+    <div id="rebirth-badge"></div>
+
+    <div id="rebirth-overlay">
+      <div class="rebirth-head">
+        <p id="rebirth-subtitle">Choose one permanent bonus</p>
+      </div>
+      <div class="web">
+        <div class="web-line" style="--angle: -90deg"></div>
+        <div class="web-line" style="--angle: -30deg"></div>
+        <div class="web-line" style="--angle: 30deg"></div>
+        <div class="web-line" style="--angle: 90deg"></div>
+        <div class="web-line" style="--angle: 150deg"></div>
+        <div class="web-line" style="--angle: 210deg"></div>
+
+        <div class="web-center">REBIRTH</div>
+
+        <button
+          class="web-node"
+          data-bonus="cubeValue"
+          style="--angle: -90deg; --node-color: #00ffff"
+        >
+          <span class="node-title">Cube Value</span>
+          <span class="node-effect">×1.2 money</span>
+        </button>
+        <button
+          class="web-node"
+          data-bonus="headStart"
+          style="--angle: -30deg; --node-color: #7fff00"
+        >
+          <span class="node-title">Head Start</span>
+          <span class="node-effect">+$200 start</span>
+        </button>
+        <button
+          class="web-node"
+          data-bonus="pressVeteran"
+          style="--angle: 30deg; --node-color: #ffd700"
+        >
+          <span class="node-title">Press Veteran</span>
+          <span class="node-effect">Press Lv.3</span>
+        </button>
+        <button
+          class="web-node"
+          data-bonus="goldenTouch"
+          style="--angle: 90deg; --node-color: #bf00ff"
+        >
+          <span class="node-title">Golden Touch</span>
+          <span class="node-effect">+3% golden</span>
+        </button>
+        <button
+          class="web-node"
+          data-bonus="speedDemon"
+          style="--angle: 150deg; --node-color: #ff6600"
+        >
+          <span class="node-title">Speed Demon</span>
+          <span class="node-effect">Conveyor Lv.3</span>
+        </button>
+        <button
+          class="web-node"
+          data-bonus="luckyStrikes"
+          style="--angle: 210deg; --node-color: #ff007f"
+        >
+          <span class="node-title">Lucky Strikes</span>
+          <span class="node-effect">crits ×10</span>
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
