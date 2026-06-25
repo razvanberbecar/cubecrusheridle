@@ -45,7 +45,8 @@
       "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('public/metal-texture.png'\\);console.log\\('w',b.readUInt32BE\\(16\\),'h',b.readUInt32BE\\(20\\)\\);\")",
       "Read(//c/Users/Razvan/Downloads/rusty-metal-bl//**)",
       "Read(//c/Users/Razvan/Downloads/rusty-metal-bl/**)",
-      "Bash(node smoke.mjs)"
+      "Bash(node smoke.mjs)",
+      "WebFetch(domain:docs.crazygames.com)"
     ]
   }
 }

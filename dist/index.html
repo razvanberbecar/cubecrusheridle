@@ -110,6 +110,30 @@
         pointer-events: auto;
       }
 
+      @media (max-width: 640px) and (pointer: coarse) {
+        #top-bar {
+          align-items: flex-start;
+        }
+        .top-buttons {
+          display: grid;
+          grid-template-columns: repeat(2, 44px);
+          gap: 8px;
+          justify-content: end;
+        }
+        .top-buttons > button,
+        .top-buttons #rebirth-btn {
+          width: 44px;
+          min-width: 44px;
+          padding: 0;
+          font-size: 20px;
+          line-height: 44px;
+          text-align: center;
+        }
+        .top-buttons .btn-label {
+          display: none;
+        }
+      }
+
       .icon-btn {
         font-size: clamp(16px, 4vw, 26px);
         background: var(--panel-bg);
@@ -780,7 +804,7 @@
         50% { transform: rotate(78deg); }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-BHRskUZM.js"></script>
+    <script type="module" crossorigin src="./assets/index-A98bhwFr.js"></script>
   </head>
   <body>
     <div id="loading-overlay">
@@ -802,9 +826,9 @@
         <div class="top-buttons">
           <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙</button>
           <button class="icon-btn" id="mute-btn" aria-label="Mute">🔊</button>
-          <button id="rebirth-btn" aria-label="Rebirth">REBIRTH ✦</button>
+          <button id="rebirth-btn" aria-label="Rebirth"><span class="btn-label">REBIRTH </span>✦</button>
           <button class="icon-btn" id="open-panel" aria-label="Upgrades">
-            ⚙ Upgrades
+            🛠<span class="btn-label"> Upgrades</span>
           </button>
         </div>
       </div>

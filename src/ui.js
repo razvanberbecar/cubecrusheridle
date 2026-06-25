@@ -63,16 +63,21 @@ export function initUI(onPurchase, onRebirth) {
   }
 
   let panelOpen = false;
+  let settingsOpen = false;
+  function syncMenu() {
+    if (panelOpen || settingsOpen) gameplayStop();
+    else gameplayStart();
+  }
   function openPanel() {
     panelOpen = true;
     panel.classList.add('open');
     refreshUpgrades();
-    gameplayStop();
+    syncMenu();
   }
   function closePanel() {
     panelOpen = false;
     panel.classList.remove('open');
-    gameplayStart();
+    syncMenu();
   }
   openBtn.addEventListener('click', () => (panelOpen ? closePanel() : openPanel()));
   closeBtn.addEventListener('click', closePanel);
@@ -94,7 +99,11 @@ export function initUI(onPurchase, onRebirth) {
   const settingsPanel = document.getElementById('settings-panel');
   const volMusic = document.getElementById('vol-music');
   const volSfx = document.getElementById('vol-sfx');
-  settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('open'));
+  settingsBtn.addEventListener('click', () => {
+    settingsOpen = !settingsOpen;
+    settingsPanel.classList.toggle('open', settingsOpen);
+    syncMenu();
+  });
 
   function readVol(key, fallback) {
     const v = parseInt(localStorage.getItem(key) ?? '', 10);
@@ -205,6 +214,6 @@ export function initUI(onPurchase, onRebirth) {
     moveBoss,
     popText,
     setCombo,
-    isPanelOpen: () => panelOpen,
+    isPanelOpen: () => panelOpen || settingsOpen,
   };
 }
