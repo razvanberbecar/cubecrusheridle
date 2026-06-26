@@ -46,7 +46,31 @@
       "Read(//c/Users/Razvan/Downloads/rusty-metal-bl//**)",
       "Read(//c/Users/Razvan/Downloads/rusty-metal-bl/**)",
       "Bash(node smoke.mjs)",
-      "WebFetch(domain:docs.crazygames.com)"
+      "WebFetch(domain:docs.crazygames.com)",
+      "Read(//c/Users/Razvan/AppData/Local/ms-playwright/chromium-1228/chrome-win/**)",
+      "Read(//c/Users/Razvan/AppData/Local/ms-playwright/chromium_headless_shell-1228/chrome-win/**)",
+      "Read(//c/Users/Razvan/AppData/Local/ms-playwright/chromium-1228//**)",
+      "Read(//c/Users/Razvan/AppData/Local/ms-playwright/**)",
+      "Bash(/c/Users/Razvan/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe --headless=new --disable-gpu --no-sandbox --hide-scrollbars --force-device-scale-factor=1 --window-size=512,512 --virtual-time-budget=3000 --screenshot=/c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/out_icon.png 'file:///C:/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/cover.html?mode=icon&w=512&h=512&ss=2')",
+      "Bash(/c/Users/Razvan/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe --headless=new --disable-gpu --no-sandbox --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --virtual-time-budget=3000 --screenshot=/c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/out_banner.png 'file:///C:/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/cover.html?mode=banner&w=1200&h=630&ss=2')",
+      "Read(//c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/**)",
+      "Bash(cp /e/games_crazygames/game2/cubecrusheridle/icon_512.png /c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/ORIGINAL_icon_512.png)",
+      "Bash(cp /e/games_crazygames/game2/cubecrusheridle/banner_1200x630.png /c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/ORIGINAL_banner_1200x630.png)",
+      "Bash(cp /c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/out_icon.png /e/games_crazygames/game2/cubecrusheridle/icon_512.png)",
+      "Bash(cp /c/Users/Razvan/AppData/Local/Temp/claude/E--games-crazygames-game2-cubecrusheridle/d3e02a88-f392-437d-b98c-e7fe711d2434/scratchpad/out_banner.png /e/games_crazygames/game2/cubecrusheridle/banner_1200x630.png)",
+      "Bash([ -d \"$REPO/dist\" ])",
+      "Bash(grep -nE 'dist|node_modules' __TRACKED_VAR__/.gitignore)",
+      "Skill(update-config)",
+      "Bash(node .claude/hooks/postbuild-check.mjs)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(node .claude/skills/regen-cover/render.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 3 http://localhost:4173/)",
+      "mcp__playwright__browser_navigate",
+      "Bash(cd *)",
+      "Bash(QA_URL=http://localhost:4173/ QA_SHOT=__TRACKED_VAR__/qa-shot.png node __TRACKED_VAR__/qa-smoke.mjs)",
+      "Bash(npx --yes @playwright/mcp@latest --help)",
+      "Bash([ -f \"$P\" ])",
+      "Bash(node *)"
     ]
   }
 }

@@ -1,0 +1,387 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#05060c}
+  #c{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const P = new URLSearchParams(location.search);
+const MODE = P.get('mode') || 'banner';
+const W = +(P.get('w') || (MODE==='icon'?512:1200));
+const H = +(P.get('h') || (MODE==='icon'?512:630));
+const SS = +(P.get('ss') || 2);           // supersample
+const cv = document.getElementById('c');
+cv.width = W*SS; cv.height = H*SS;
+cv.style.width = W+'px'; cv.style.height = H+'px';
+const x = cv.getContext('2d');
+x.scale(SS,SS);
+
+// ---- deterministic PRNG ----
+let _s = 1337;
+function rnd(){ _s = (_s*1664525 + 1013904223) & 0x7fffffff; return _s/0x7fffffff; }
+function rr(a,b){ return a + (b-a)*rnd(); }
+
+const TAU = Math.PI*2;
+function rRect(c,X,Y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath();
+  c.moveTo(X+r,Y); c.arcTo(X+w,Y,X+w,Y+h,r); c.arcTo(X+w,Y+h,X,Y+h,r);
+  c.arcTo(X,Y+h,X,Y,r); c.arcTo(X,Y,X+w,Y,r); c.closePath(); }
+function glow(c,X,Y,r,col,a){ c.save(); const g=c.createRadialGradient(X,Y,0,X,Y,r);
+  g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)'); c.globalAlpha=a||1;
+  c.globalCompositeOperation='lighter'; c.fillStyle=g; c.beginPath(); c.arc(X,Y,r,0,TAU); c.fill(); c.restore(); }
+
+// =================================================================
+function background(c,W,H,opt){
+  // base vertical gradient
+  let g = c.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0b1022'); g.addColorStop(0.45,'#0a0c18'); g.addColorStop(0.8,'#120a1c'); g.addColorStop(1,'#1a0f1e');
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+
+  // big magenta impact glow + cyan counter
+  glow(c,opt.cx,opt.cy,H*0.95,'rgba(255,40,170,0.55)',0.9);
+  glow(c,opt.cx,opt.cy,H*0.5,'rgba(255,120,210,0.5)',0.8);
+  glow(c,opt.cx-W*0.18,opt.cy+H*0.15,H*0.6,'rgba(40,150,255,0.18)',0.7);
+
+  // top light rays from press
+  c.save(); c.globalCompositeOperation='lighter';
+  for(let i=0;i<7;i++){ const a=rr(0.02,0.06); const rx=opt.cx+rr(-W*0.18,W*0.18);
+    const grd=c.createLinearGradient(rx,0,opt.cx,opt.cy);
+    grd.addColorStop(0,'rgba(180,210,255,'+a+')'); grd.addColorStop(1,'rgba(180,210,255,0)');
+    c.fillStyle=grd; c.beginPath(); c.moveTo(rx-8,0); c.lineTo(rx+8,0);
+    c.lineTo(opt.cx+rr(-30,30),opt.cy); c.closePath(); c.fill(); }
+  c.restore();
+
+  warehouse(c,W,H,opt);
+  haze(c,W,H);
+}
+
+function warehouse(c,W,H,opt){
+  c.save(); c.globalAlpha=0.5;
+  const floorY = opt.floorY;
+  // far wall band
+  let wg=c.createLinearGradient(0,floorY-H*0.42,0,floorY);
+  wg.addColorStop(0,'rgba(28,34,52,0)'); wg.addColorStop(1,'rgba(30,36,54,0.5)');
+  c.fillStyle=wg; c.fillRect(0,floorY-H*0.42,W,H*0.42);
+  // shelving rack silhouettes (orange industrial, dark)
+  const rackTop = floorY-H*0.40;
+  const cols = MODE==='icon'?5:9;
+  for(let i=0;i<cols;i++){
+    const X = (W/cols)*i + rr(-6,6);
+    const ww = W/cols*0.86;
+    // uprights
+    c.fillStyle='rgba(120,60,24,0.30)';
+    c.fillRect(X, rackTop, 7, floorY-rackTop);
+    c.fillRect(X+ww, rackTop, 7, floorY-rackTop);
+    // shelves + boxes
+    for(let s=0;s<3;s++){
+      const sy = rackTop + (floorY-rackTop)*(0.18+s*0.30);
+      c.fillStyle='rgba(120,60,24,0.26)'; c.fillRect(X, sy, ww+7, 5);
+      // boxes on shelf
+      let bx=X+10;
+      while(bx < X+ww-14){ const bw=rr(26,52), bh=rr(18,30);
+        c.fillStyle='rgba(150,110,70,'+rr(0.10,0.22)+')'; c.fillRect(bx, sy-bh, bw, bh);
+        c.strokeStyle='rgba(90,60,35,0.25)'; c.lineWidth=1; c.strokeRect(bx, sy-bh, bw, bh);
+        bx+=bw+rr(4,12); }
+    }
+  }
+  c.restore();
+}
+
+function haze(c,W,H){
+  c.save(); c.globalCompositeOperation='lighter';
+  for(let i=0;i<22;i++){ const X=rr(0,W),Y=rr(H*0.1,H*0.9),r=rr(20,70);
+    glow(c,X,Y,r,'rgba(120,90,160,0.05)',1); }
+  c.restore();
+}
+
+// conveyor belt receding in perspective
+function belt(c,W,H,opt){
+  const cx=opt.cx, fy=opt.floorY;
+  const nearY=fy, farY=opt.beltFarY;
+  const nearHW=opt.beltNearHW, farHW=opt.beltFarHW;
+  c.save();
+  // belt body
+  c.beginPath();
+  c.moveTo(cx-nearHW,nearY); c.lineTo(cx+nearHW,nearY);
+  c.lineTo(cx+farHW,farY); c.lineTo(cx-farHW,farY); c.closePath();
+  let bg=c.createLinearGradient(0,farY,0,nearY);
+  bg.addColorStop(0,'#15131c'); bg.addColorStop(1,'#272430');
+  c.fillStyle=bg; c.fill();
+  // crush-zone purple glow on belt
+  c.save(); c.clip(); glow(c,cx,nearY-(nearY-farY)*0.18,nearHW*1.3,'rgba(150,60,230,0.55)',0.9); c.restore();
+  // belt segment lines
+  c.strokeStyle='rgba(0,0,0,0.55)'; c.lineWidth=2;
+  for(let t=0.05;t<1;t+=0.11){ const y=farY+(nearY-farY)*t; const hw=farHW+(nearHW-farHW)*t;
+    c.beginPath(); c.moveTo(cx-hw,y); c.lineTo(cx+hw,y); c.stroke(); }
+  // diamond-plate sheen
+  c.globalCompositeOperation='lighter'; c.globalAlpha=0.10;
+  c.fillStyle='#6a6f8a';
+  c.beginPath(); c.moveTo(cx-nearHW*0.5,nearY); c.lineTo(cx+nearHW*0.2,nearY);
+  c.lineTo(cx+farHW*0.2,farY); c.lineTo(cx-farHW*0.5,farY); c.closePath(); c.fill();
+  c.restore();
+
+  // side rails with hazard stripes
+  for(const sgn of [-1,1]){
+    c.save();
+    c.beginPath();
+    c.moveTo(cx+sgn*nearHW,nearY); c.lineTo(cx+sgn*(nearHW+opt.railW),nearY+6);
+    c.lineTo(cx+sgn*(farHW+opt.railW*0.5),farY); c.lineTo(cx+sgn*farHW,farY); c.closePath();
+    c.fillStyle='#15161d'; c.fill();
+    c.clip();
+    // hazard chevrons
+    for(let t=0;t<1.2;t+=0.08){ const y=farY+(nearY-farY)*t; const hw=farHW+(nearHW-farHW)*t;
+      const isY=((t*100)|0)%2===0;
+      c.fillStyle=isY?'rgba(240,190,30,0.85)':'rgba(20,20,20,0.9)';
+      c.beginPath(); c.moveTo(cx+sgn*hw,y); c.lineTo(cx+sgn*(hw+opt.railW),y+4);
+      c.lineTo(cx+sgn*(hw+opt.railW),y+10); c.lineTo(cx+sgn*hw,y+6); c.closePath(); c.fill(); }
+    c.restore();
+  }
+}
+
+// faux-3D neon cube, center (cx,cy) bottom-front corner area, half-width w
+function cube(c,cx,cy,w,squash){
+  squash = squash||1;
+  const th = w*0.52;             // top diamond vertical
+  const sh = w*1.0*squash;       // side height
+  const topN=[cx,cy-sh-th], topE=[cx+w,cy-sh-th/2], topS=[cx,cy-sh], topW=[cx-w,cy-sh-th/2];
+  const botS=[cx,cy], botE=[cx+w,cy-th/2], botW=[cx-w,cy-th/2];
+  function face(pts,grad){ c.beginPath(); c.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]); c.closePath(); c.fillStyle=grad; c.fill(); }
+
+  // outer glow
+  glow(c,cx,cy-sh*0.5,w*2.0,'rgba(255,40,170,0.45)',0.8);
+
+  // left face (darker)
+  let lg=c.createLinearGradient(topW[0],topW[1],botS[0],botS[1]);
+  lg.addColorStop(0,'#a8166f'); lg.addColorStop(1,'#5e0c40');
+  face([topW,topS,botS,botW],lg);
+  // right face (mid)
+  let rg=c.createLinearGradient(topS[0],topS[1],botE[0],botE[1]);
+  rg.addColorStop(0,'#e3268f'); rg.addColorStop(1,'#8a135c');
+  face([topS,topE,botE,botS],rg);
+  // top face (bright)
+  let tg=c.createLinearGradient(topN[0],topN[1],topS[0],topS[1]);
+  tg.addColorStop(0,'#ff7fd8'); tg.addColorStop(1,'#ff3aa6');
+  face([topN,topE,topS,topW],tg);
+
+  // bright neon edges
+  c.save(); c.globalCompositeOperation='lighter'; c.strokeStyle='rgba(255,150,225,0.9)';
+  c.lineWidth=2.5; c.shadowColor='#ff5ec8'; c.shadowBlur=14;
+  c.beginPath();
+  c.moveTo(...topN); c.lineTo(...topE); c.lineTo(...topS); c.lineTo(...topW); c.closePath();
+  c.moveTo(...topS); c.lineTo(...botS); c.moveTo(...topE); c.lineTo(...botE);
+  c.moveTo(...topW); c.lineTo(...botW); c.lineTo(...botS); c.lineTo(...botE);
+  c.stroke(); c.restore();
+
+  // crack on right face
+  c.save(); c.strokeStyle='rgba(255,220,250,0.9)'; c.lineWidth=1.6; c.shadowColor='#fff'; c.shadowBlur=6;
+  c.beginPath(); let px=cx+w*0.12, py=cy-sh*0.95;
+  c.moveTo(px,py); for(let i=0;i<5;i++){ px+=rr(8,18); py+=rr(8,22); c.lineTo(px,py); }
+  c.stroke();
+  c.beginPath(); c.moveTo(cx+w*0.4,cy-sh*0.7); c.lineTo(cx+w*0.62,cy-sh*0.5); c.stroke();
+  c.restore();
+}
+
+// hydraulic press ram coming down to plateY (the pressing surface bottom)
+function press(c,cx,topY,plateY,halfW){
+  const ramW=halfW*1.15;
+  // shadow under plate
+  // telescopic ram segments
+  c.save();
+  const segs=4; const segH=(plateY-topY-halfW*0.5)/segs;
+  for(let i=0;i<segs;i++){ const y=topY+i*segH; const w=ramW*(0.62+0.10*i);
+    let g=c.createLinearGradient(cx-w,0,cx+w,0);
+    g.addColorStop(0,'#3a3f4d'); g.addColorStop(0.18,'#aeb6c6'); g.addColorStop(0.42,'#e9eef7');
+    g.addColorStop(0.6,'#9aa2b4'); g.addColorStop(0.85,'#5b616f'); g.addColorStop(1,'#2c303b');
+    rRect(c,cx-w,y,w*2,segH+6,6); c.fillStyle=g; c.fill();
+    c.strokeStyle='rgba(0,0,0,0.4)'; c.lineWidth=1.5; c.stroke();
+    // ridge highlight
+    c.fillStyle='rgba(255,255,255,0.25)'; c.fillRect(cx-w*0.5,y+3,w*0.18,segH);
+  }
+  // head plate (pressing block)
+  const plH=halfW*0.5, plW=ramW*1.6;
+  let pg=c.createLinearGradient(0,plateY-plH,0,plateY);
+  pg.addColorStop(0,'#cfd6e2'); pg.addColorStop(0.5,'#7d8494'); pg.addColorStop(1,'#3a3e49');
+  rRect(c,cx-plW,plateY-plH,plW*2,plH,5); c.fillStyle=pg; c.fill();
+  c.strokeStyle='rgba(0,0,0,0.45)'; c.lineWidth=2; c.stroke();
+  // bolts
+  c.fillStyle='#20232c';
+  for(let i=-1;i<=1;i++){ c.beginPath(); c.arc(cx+i*plW*0.6,plateY-plH*0.5,plH*0.13,0,TAU); c.fill(); }
+  // warning stripe on plate front
+  c.save(); rRect(c,cx-plW,plateY-plH*0.32,plW*2,plH*0.32,3); c.clip();
+  for(let sx=cx-plW;sx<cx+plW;sx+=16){ c.fillStyle=((sx/16|0)%2)?'#f0bf1e':'#1a1a1a';
+    c.beginPath(); c.moveTo(sx,plateY-plH*0.32); c.lineTo(sx+10,plateY-plH*0.32);
+    c.lineTo(sx,plateY); c.closePath(); c.fill(); }
+  c.restore();
+  c.restore();
+}
+
+// contact glow that sits BEHIND the press plate (light squeezing out)
+function impactGlow(c,cx,cy,s,I){
+  I=I==null?1:I;
+  c.save(); c.globalCompositeOperation='lighter';
+  // horizontal flare leaking sideways from under the plate
+  let fg=c.createLinearGradient(cx-s*2.2,cy,cx+s*2.2,cy);
+  fg.addColorStop(0,'rgba(255,120,210,0)'); fg.addColorStop(0.5,'rgba(255,225,248,'+(0.85*I)+')');
+  fg.addColorStop(1,'rgba(255,120,210,0)');
+  c.fillStyle=fg; c.fillRect(cx-s*2.2,cy-s*0.07,s*4.4,s*0.14);
+  // modest core glow (kept small so the cube + press stay readable)
+  glow(c,cx,cy,s*0.75,'rgba(255,255,255,'+(0.75*I)+')',1);
+  glow(c,cx,cy,s*1.5,'rgba(255,80,195,'+(0.7*I)+')',1);
+  c.restore();
+}
+// debris drawn IN FRONT of the press for depth
+function impactDebris(c,cx,cy,s,I){
+  I=I==null?1:I;
+  c.save(); c.globalCompositeOperation='lighter';
+  // radial spikes from contact
+  for(let i=0;i<12;i++){ const a=rr(0,TAU); const len=rr(s*0.5,s*1.5)*I;
+    c.strokeStyle='rgba(255,210,245,'+rr(0.25,0.65)+')'; c.lineWidth=rr(1,2.5);
+    c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*len, cy+Math.sin(a)*len*0.7); c.stroke(); }
+  c.restore();
+  // flying shards (upper hemisphere)
+  for(let i=0;i<16;i++){ const a=rr(-Math.PI*0.95,-Math.PI*0.05); const d=rr(s*0.9,s*2.4)*(0.7+0.3*I);
+    const X=cx+Math.cos(a)*d, Y=cy+Math.sin(a)*d*0.8; const sz=rr(3,9);
+    c.save(); c.translate(X,Y); c.rotate(rr(0,TAU));
+    c.fillStyle=['#ff5ec8','#ff8fe0','#c1259a','#ffd0ef'][i%4];
+    c.shadowColor='#ff5ec8'; c.shadowBlur=8;
+    c.fillRect(-sz/2,-sz/2,sz,sz*rr(0.6,1)); c.restore(); }
+  // sparks
+  c.save(); c.globalCompositeOperation='lighter';
+  for(let i=0;i<18;i++){ const a=rr(0,TAU); const d=rr(s*0.5,s*2.4);
+    const X=cx+Math.cos(a)*d, Y=cy+Math.sin(a)*d*0.7;
+    glow(c,X,Y,rr(2,5),'rgba(255,240,200,0.85)',1); }
+  c.restore();
+}
+
+function foreground(c,W,H,opt){
+  // floating neon bokeh
+  c.save(); c.globalCompositeOperation='lighter';
+  const cols=['rgba(255,80,200,','rgba(80,200,255,','rgba(255,210,90,','rgba(160,90,255,'];
+  for(let i=0;i<16;i++){ const X=rr(0,W),Y=rr(0,H),r=rr(4,16);
+    glow(c,X,Y,r*3,cols[i%cols.length]+'0.5)',rr(0.3,0.7));
+    c.fillStyle=cols[i%cols.length]+'0.9)'; c.beginPath(); c.arc(X,Y,r*0.5,0,TAU); c.fill(); }
+  c.restore();
+}
+
+function vignette(c,W,H){
+  const g=c.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.25,W/2,H*0.5,Math.max(W,H)*0.75);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.65)');
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+}
+
+function grain(c,W,H){
+  const n=256; const off=document.createElement('canvas'); off.width=n; off.height=n;
+  const oc=off.getContext('2d'); const id=oc.createImageData(n,n);
+  for(let i=0;i<id.data.length;i+=4){ const v=200+rnd()*55|0; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+  oc.putImageData(id,0,0);
+  c.save(); c.globalAlpha=0.05; c.globalCompositeOperation='overlay';
+  const pat=c.createPattern(off,'repeat'); c.fillStyle=pat; c.fillRect(0,0,W,H); c.restore();
+}
+
+// ----- extruded wordmark -----
+function setFont(c,px){ c.font='900 '+px+'px "Arial Black","Segoe UI Black",Impact,sans-serif'; }
+function wordLine(c,text,X,Y,px,faceTop,faceBot,glowCol,depth){
+  c.save(); setFont(c,px); c.textAlign='left'; c.textBaseline='alphabetic';
+  // neon glow
+  c.save(); c.fillStyle=glowCol; c.shadowColor=glowCol; c.shadowBlur=px*0.55;
+  c.fillText(text,X,Y); c.fillText(text,X,Y); c.restore();
+  // extrude
+  c.fillStyle='#1c0613';
+  for(let i=depth;i>=1;i--) c.fillText(text,X+i*0.9,Y+i*0.9);
+  // face gradient
+  const g=c.createLinearGradient(X,Y-px*0.78,X,Y+px*0.08);
+  g.addColorStop(0,faceTop); g.addColorStop(0.55,faceBot); g.addColorStop(1,faceBot);
+  c.fillStyle=g; c.fillText(text,X,Y);
+  // top sheen
+  c.save(); c.beginPath(); c.rect(X-4,Y-px*0.78,c.measureText(text).width+8,px*0.34); c.clip();
+  c.fillStyle='rgba(255,255,255,0.55)'; c.fillText(text,X,Y); c.restore();
+  // keyline
+  c.lineWidth=Math.max(1.2,px*0.018); c.strokeStyle='rgba(255,255,255,0.35)'; c.strokeText(text,X,Y);
+  c.restore();
+  return c.measureText(text).width;
+}
+
+// =================================================================
+function composeBanner(){
+  const opt={ cx:W*0.70, cy:H*0.46, floorY:H*0.86, beltFarY:H*0.52, beltNearHW:W*0.34, beltFarHW:W*0.10, railW:18 };
+  background(x,W,H,opt);
+  belt(x,W,H,opt);
+  // press + cube
+  const cubeCX=W*0.70, cubeBaseY=H*0.78, cw=W*0.085;
+  cube(x,cubeCX,cubeBaseY,cw,0.86);
+  const plateY=cubeBaseY-cw*1.0-cw*0.52-6;   // just above cube top
+  impactGlow(x,cubeCX,plateY+8,cw*1.1,0.95);
+  press(x,cubeCX,-10,plateY,cw*0.9);
+  impactDebris(x,cubeCX,plateY+8,cw*1.1,0.95);
+  foreground(x,W,H,opt);
+  vignette(x,W,H);
+
+  // ---- wordmark (left) ----
+  x.save();
+  x.translate(W*0.045,H*0.30); x.rotate(-0.035);
+  let w1=wordLine(x,'CUBE',0,0,118,'#ffffff','#cfd6e6','rgba(120,180,255,0.5)',9);
+  let w2=wordLine(x,'CRUSHER',0,96,90,'#ffffff','#c9d2e4','rgba(120,180,255,0.5)',8);
+  wordLine(x,'IDLE',4,210,128,'#ff8fe0','#ff2ea0','rgba(255,40,170,0.85)',10);
+  x.restore();
+  // tagline pill
+  x.save();
+  const ty=H*0.80, tx=W*0.055;
+  x.font='800 22px "Segoe UI",Arial,sans-serif'; x.textBaseline='middle';
+  const tag='TAP  •  CRUSH  •  REBIRTH'; const tw=x.measureText(tag).width;
+  rRect(x,tx,ty-20,tw+34,40,20); x.fillStyle='rgba(255,46,160,0.16)'; x.fill();
+  x.strokeStyle='rgba(255,90,200,0.8)'; x.lineWidth=2; x.stroke();
+  x.fillStyle='#ffd8f0'; x.fillText(tag,tx+17,ty+1);
+  x.restore();
+  grain(x,W,H);
+}
+
+function composeIcon(){
+  const opt={ cx:W*0.5, cy:H*0.44, floorY:H*0.92, beltFarY:H*0.6, beltNearHW:W*0.62, beltFarHW:W*0.22, railW:16 };
+  background(x,W,H,opt);
+  belt(x,W,H,opt);
+  const cubeCX=W*0.5, cubeBaseY=H*0.70, cw=W*0.185;
+  cube(x,cubeCX,cubeBaseY,cw,0.82);
+  const plateY=cubeBaseY-cw*1.0-cw*0.52-8;
+  impactGlow(x,cubeCX,plateY+10,cw*1.05,0.62);
+  press(x,cubeCX,-10,plateY,cw*0.82);
+  impactDebris(x,cubeCX,plateY+10,cw*1.05,0.6);
+  foreground(x,W,H,opt);
+  vignette(x,W,H);
+  // bottom gradient scrim so the title reads
+  let sg=x.createLinearGradient(0,H*0.74,0,H);
+  sg.addColorStop(0,'rgba(8,6,16,0)'); sg.addColorStop(1,'rgba(8,6,16,0.85)');
+  x.fillStyle=sg; x.fillRect(0,H*0.74,W,H*0.26);
+  // compact stacked title: CUBE CRUSHER + IDLE
+  x.save(); x.textAlign='center'; x.textBaseline='alphabetic';
+  setFont(x,38); x.fillStyle='#e6ecf6'; x.shadowColor='#000'; x.shadowBlur=6;
+  x.fillText('CUBE',W*0.5,H*0.83); x.shadowBlur=0;
+  // CRUSHER extruded
+  setFont(x,62);
+  const g=x.createLinearGradient(0,H*0.85,0,H*0.94); g.addColorStop(0,'#fff'); g.addColorStop(1,'#cdd6e6');
+  x.save(); x.fillStyle='rgba(120,180,255,0.4)'; x.shadowColor='rgba(120,180,255,0.6)'; x.shadowBlur=20;
+  x.fillText('CRUSHER',W*0.5,H*0.915); x.restore();
+  x.fillStyle='#1c0613'; for(let i=6;i>=1;i--) x.fillText('CRUSHER',W*0.5+i*0.6,H*0.915+i*0.6);
+  x.fillStyle=g; x.fillText('CRUSHER',W*0.5,H*0.915);
+  x.restore();
+  // IDLE magenta pill, bottom-right of cube area
+  x.save(); x.textAlign='center'; x.textBaseline='middle';
+  x.font='900 30px "Arial Black","Segoe UI Black",Impact,sans-serif';
+  const it='IDLE', iw=x.measureText(it).width;
+  const ix=W*0.5, iy=H*0.965;
+  rRect(x,ix-iw/2-14,iy-19,iw+28,38,19); x.fillStyle='#ff2ea0';
+  x.shadowColor='rgba(255,46,160,0.9)'; x.shadowBlur=18; x.fill(); x.shadowBlur=0;
+  x.fillStyle='#fff'; x.fillText(it,ix,iy+1);
+  x.restore();
+  grain(x,W,H);
+}
+
+if(MODE==='icon') composeIcon(); else composeBanner();
+document.title='READY';
+</script>
+</body>
+</html>

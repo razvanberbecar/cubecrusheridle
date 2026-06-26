@@ -49,5 +49,15 @@ There is no test suite. Verify changes by building (and by `npm run dev` when yo
 - Persist via `persist()` (every 30s, on purchase, on rebirth, on unload). Saves the whole `gameState`.
 - Memory notes for this project live in the assistant's memory dir (`MEMORY.md` → `project_overview.md`) with finer detail.
 
-## Status (as of last session, 2026-06-24)
-Feature-complete for the loop above and **builds clean**. Not yet browser-verified for the latest warehouse/visual changes — placement/scale of decorations may need nudging. Not yet done: ad integration (interstitial/rewarded), background-music polish, game cover art (512×512 + 1200×630). SDK lifecycle + save are wired; ads are stubbed/guarded only.
+## Automations (Claude Code setup — `.claude/`)
+Tailored automations live in `.claude/` (generated via the `claude-code-setup` plugin's automation-recommender). New config registers on session start — after pulling/editing, open `/hooks` once or restart so it goes live.
+
+- **Stop hook** — `.claude/settings.json` runs `.claude/hooks/postbuild-check.mjs` when Claude finishes a turn. Enforces the "always `npm run build`" rule: rebuilds **only if `src/`, `public/`, `index.html`, or `vite.config.js` changed** since the last build; on build failure exits 2 so the error is fed back and fixed before stopping; guards the bundle (warn 30 MB, hard-fail 47 MB, under the 50 MB CrazyGames cap). Edit thresholds in the script; review/disable via `/hooks`.
+- **Skills** — `/regen-cover` (user-only): regenerates `icon_512.png` + `banner_1200x630.png` from the bundled Canvas2D generator (`.claude/skills/regen-cover/cover.html` → headless Chromium via `render.mjs`); edit `cover.html` to change the art. `/crazygames-qa`: runs the submission/QA checklist (SDK lifecycle, zero console errors, no stray external requests, save, bundle, mobile).
+- **Subagents** — `threejs-perf-reviewer` (60 fps / merged-geometry / per-frame-alloc / leak review) and `crazygames-compliance-reviewer` (external resources, SDK usage, ad handling, bundle cap). Invoke for diff review of perf-sensitive or SDK/asset changes.
+- **MCP servers** (project scope, in `~/.claude.json`) — **playwright** (`@playwright/mcp`): drive the running game in a real browser, click the canvas, screenshot, read console — the core QA loop. **context7** (`@upstash/context7-mcp`): version-correct Three.js r0.184 docs.
+
+## Status (as of last session, 2026-06-26)
+**Complete and launch-ready.** Builds clean. **Visuals done** (warehouse environment + decorations browser-verified — see `Screenshot.png`). **CrazyGames QA compliance verified.** SDK lifecycle, save, and **ads (interstitial + rewarded — "2× Money" and "Golden Surge" buttons)** all wired and working. Background music/SFX done. **Cover art done** — `icon_512.png` (512×512) + `banner_1200x630.png` (1200×630), redone 2026-06-26 as stylized game scenes (press crushing a neon cube on the hazard conveyor) with reworked branding. Generated from a self-contained Canvas2D script rendered via headless Chromium (not kept in repo; regenerate from scratch if needed).
+
+Nothing left to build. Remaining items are submission-only (upload to CrazyGames portal, real-device fps spot-check, confirm live ad fill).

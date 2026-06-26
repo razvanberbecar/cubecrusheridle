@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/postbuild-check.mjs",
+            "timeout": 120,
+            "statusMessage": "Building & checking bundle size…"
+          }
+        ]
+      }
+    ]
+  }
+}
