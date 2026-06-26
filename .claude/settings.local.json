@@ -71,7 +71,11 @@
       "Bash(npx --yes @playwright/mcp@latest --help)",
       "Bash([ -f \"$P\" ])",
       "Bash(node *)",
-      "Bash(powershell.exe -NoProfile -Command '\\(Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess | Select-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }')"
+      "Bash(powershell.exe -NoProfile -Command '\\(Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess | Select-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }')",
+      "PowerShell($out = npm run build 2>&1 | Out-String; if \\($out -match \"built in\"\\) { \"BUILD OK\"; \\($out | Select-String \"dist/|built in|gzip\" \\) } else { \"BUILD FAILED\"; $out })",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(node .claude/skills/regen-cover/render.mjs promo)",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; foreach\\($f in 'landscape_1920x1080.png','portrait_800x1200.png','square_800x800.png'\\){ $p=\"E:\\\\games_crazygames\\\\game2\\\\cubecrusheridle\\\\$f\"; $img=[System.Drawing.Image]::FromFile\\($p\\); \"{0}: {1}x{2}, {3:N0} KB\" -f $f,$img.Width,$img.Height,\\(\\(Get-Item $p\\).Length/1KB\\); $img.Dispose\\(\\) })"
     ]
   }
 }

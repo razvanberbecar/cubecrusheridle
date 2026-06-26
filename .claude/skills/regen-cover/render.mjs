@@ -36,9 +36,13 @@ function findChrome() {
 }
 
 const TARGETS = {
-  icon:   { w: 512,  h: 512, out: 'icon_512.png' },
-  banner: { w: 1200, h: 630, out: 'banner_1200x630.png' },
+  icon:   { w: 512,  h: 512,  out: 'icon_512.png' },
+  banner: { w: 1200, h: 630,  out: 'banner_1200x630.png' },
+  land:   { w: 1920, h: 1080, out: 'landscape_1920x1080.png' },
+  port:   { w: 800,  h: 1200, out: 'portrait_800x1200.png' },
+  square: { w: 800,  h: 800,  out: 'square_800x800.png' },
 };
+const GROUPS = { all: ['icon', 'banner'], promo: ['land', 'port', 'square'] };
 
 function render(chrome, mode) {
   const t = TARGETS[mode];
@@ -64,7 +68,7 @@ if (!chrome) {
   console.error('No Chromium/Edge/Chrome binary found. Install a Chromium-family browser or run `npx playwright install chromium`.');
   process.exit(1);
 }
-const modes = which === 'all' ? ['icon', 'banner'] : [which];
+const modes = GROUPS[which] || [which];
 let ok = true;
 for (const m of modes) { if (!TARGETS[m]) { console.error(`unknown target: ${m}`); ok = false; continue; } ok = render(chrome, m) && ok; }
 process.exit(ok ? 0 : 1);

@@ -305,6 +305,10 @@ function wordLine(c,text,X,Y,px,faceTop,faceBot,glowCol,depth){
   c.restore();
   return c.measureText(text).width;
 }
+function centeredWord(c,text,cx,Y,px,faceTop,faceBot,glowCol,depth){
+  c.save(); setFont(c,px); const w=c.measureText(text).width; c.restore();
+  return wordLine(c,text,cx-w/2,Y,px,faceTop,faceBot,glowCol,depth);
+}
 
 // =================================================================
 function composeBanner(){
@@ -380,7 +384,109 @@ function composeIcon(){
   grain(x,W,H);
 }
 
-if(MODE==='icon') composeIcon(); else composeBanner();
+// ---- 16:9 landscape promo (1920x1080) ----
+function composeLandscape(){
+  const S=H/630;
+  const opt={ cx:W*0.68, cy:H*0.46, floorY:H*0.86, beltFarY:H*0.50, beltNearHW:W*0.36, beltFarHW:W*0.11, railW:18*S };
+  background(x,W,H,opt);
+  belt(x,W,H,opt);
+  const cubeCX=W*0.68, cubeBaseY=H*0.75, cw=W*0.082;
+  cube(x,cubeCX,cubeBaseY,cw,0.86);
+  const plateY=cubeBaseY-cw*1.0-cw*0.52-6;
+  impactGlow(x,cubeCX,plateY+8,cw*1.1,0.95);
+  press(x,cubeCX,-10,plateY,cw*0.9);
+  impactDebris(x,cubeCX,plateY+8,cw*1.1,0.95);
+  foreground(x,W,H,opt);
+  vignette(x,W,H);
+  x.save();
+  x.translate(W*0.05,H*0.30); x.rotate(-0.035);
+  wordLine(x,'CUBE',0,0,118*S,'#ffffff','#cfd6e6','rgba(120,180,255,0.5)',Math.round(9*S));
+  wordLine(x,'CRUSHER',0,96*S,90*S,'#ffffff','#c9d2e4','rgba(120,180,255,0.5)',Math.round(8*S));
+  wordLine(x,'IDLE',4*S,210*S,128*S,'#ff8fe0','#ff2ea0','rgba(255,40,170,0.85)',Math.round(10*S));
+  x.restore();
+  x.save();
+  const fs=24*S, ty=H*0.82, tx=W*0.052;
+  x.font='800 '+fs+'px "Segoe UI",Arial,sans-serif'; x.textBaseline='middle';
+  const tag='TAP  •  CRUSH  •  REBIRTH'; const tw=x.measureText(tag).width;
+  rRect(x,tx,ty-fs,tw+fs*1.5,fs*2,fs); x.fillStyle='rgba(255,46,160,0.16)'; x.fill();
+  x.strokeStyle='rgba(255,90,200,0.8)'; x.lineWidth=2*S; x.stroke();
+  x.fillStyle='#ffd8f0'; x.fillText(tag,tx+fs*0.75,ty+1);
+  x.restore();
+  grain(x,W,H);
+}
+
+// ---- 2:3 portrait promo (800x1200) ----
+function composePortrait(){
+  const opt={ cx:W*0.5, cy:H*0.40, floorY:H*0.72, beltFarY:H*0.44, beltNearHW:W*0.58, beltFarHW:W*0.19, railW:16 };
+  background(x,W,H,opt);
+  belt(x,W,H,opt);
+  const cubeCX=W*0.5, cubeBaseY=H*0.58, cw=W*0.165;
+  cube(x,cubeCX,cubeBaseY,cw,0.84);
+  const plateY=cubeBaseY-cw*1.0-cw*0.52-8;
+  impactGlow(x,cubeCX,plateY+10,cw*1.05,0.85);
+  press(x,cubeCX,-10,plateY,cw*0.85);
+  impactDebris(x,cubeCX,plateY+10,cw*1.05,0.85);
+  foreground(x,W,H,opt);
+  vignette(x,W,H);
+  let sg=x.createLinearGradient(0,H*0.62,0,H);
+  sg.addColorStop(0,'rgba(8,6,16,0)'); sg.addColorStop(0.45,'rgba(8,6,16,0.85)'); sg.addColorStop(1,'rgba(8,6,16,0.97)');
+  x.fillStyle=sg; x.fillRect(0,H*0.62,W,H*0.38);
+  centeredWord(x,'CUBE',W*0.5,H*0.78,82,'#ffffff','#cfd6e6','rgba(120,180,255,0.5)',8);
+  centeredWord(x,'CRUSHER',W*0.5,H*0.855,86,'#ffffff','#c9d2e4','rgba(120,180,255,0.5)',8);
+  x.save(); x.textAlign='center'; x.textBaseline='middle';
+  x.font='900 76px "Arial Black","Segoe UI Black",Impact,sans-serif';
+  const it='IDLE', iw=x.measureText(it).width;
+  const ix=W*0.5, iy=H*0.945;
+  rRect(x,ix-iw/2-22,iy-40,iw+44,80,40); x.fillStyle='#ff2ea0';
+  x.shadowColor='rgba(255,46,160,0.9)'; x.shadowBlur=26; x.fill(); x.shadowBlur=0;
+  x.fillStyle='#fff'; x.fillText(it,ix,iy+2);
+  x.restore();
+  grain(x,W,H);
+}
+
+// ---- 1:1 square promo (800x800) — icon layout, scaled ----
+function composeSquare(){
+  const k=W/512;
+  const opt={ cx:W*0.5, cy:H*0.44, floorY:H*0.92, beltFarY:H*0.6, beltNearHW:W*0.62, beltFarHW:W*0.22, railW:16*k };
+  background(x,W,H,opt);
+  belt(x,W,H,opt);
+  const cubeCX=W*0.5, cubeBaseY=H*0.70, cw=W*0.185;
+  cube(x,cubeCX,cubeBaseY,cw,0.82);
+  const plateY=cubeBaseY-cw*1.0-cw*0.52-8;
+  impactGlow(x,cubeCX,plateY+10,cw*1.05,0.62);
+  press(x,cubeCX,-10,plateY,cw*0.82);
+  impactDebris(x,cubeCX,plateY+10,cw*1.05,0.6);
+  foreground(x,W,H,opt);
+  vignette(x,W,H);
+  let sg=x.createLinearGradient(0,H*0.74,0,H);
+  sg.addColorStop(0,'rgba(8,6,16,0)'); sg.addColorStop(1,'rgba(8,6,16,0.85)');
+  x.fillStyle=sg; x.fillRect(0,H*0.74,W,H*0.26);
+  x.save(); x.textAlign='center'; x.textBaseline='alphabetic';
+  setFont(x,38*k); x.fillStyle='#e6ecf6'; x.shadowColor='#000'; x.shadowBlur=6*k;
+  x.fillText('CUBE',W*0.5,H*0.83); x.shadowBlur=0;
+  setFont(x,62*k);
+  const g=x.createLinearGradient(0,H*0.85,0,H*0.94); g.addColorStop(0,'#fff'); g.addColorStop(1,'#cdd6e6');
+  x.save(); x.fillStyle='rgba(120,180,255,0.4)'; x.shadowColor='rgba(120,180,255,0.6)'; x.shadowBlur=20*k;
+  x.fillText('CRUSHER',W*0.5,H*0.915); x.restore();
+  x.fillStyle='#1c0613'; for(let i=6;i>=1;i--) x.fillText('CRUSHER',W*0.5+i*0.6*k,H*0.915+i*0.6*k);
+  x.fillStyle=g; x.fillText('CRUSHER',W*0.5,H*0.915);
+  x.restore();
+  x.save(); x.textAlign='center'; x.textBaseline='middle';
+  x.font='900 '+(30*k)+'px "Arial Black","Segoe UI Black",Impact,sans-serif';
+  const it='IDLE', iw=x.measureText(it).width;
+  const ix=W*0.5, iy=H*0.965;
+  rRect(x,ix-iw/2-14*k,iy-19*k,iw+28*k,38*k,19*k); x.fillStyle='#ff2ea0';
+  x.shadowColor='rgba(255,46,160,0.9)'; x.shadowBlur=18*k; x.fill(); x.shadowBlur=0;
+  x.fillStyle='#fff'; x.fillText(it,ix,iy+1);
+  x.restore();
+  grain(x,W,H);
+}
+
+if(MODE==='icon') composeIcon();
+else if(MODE==='square') composeSquare();
+else if(MODE==='land') composeLandscape();
+else if(MODE==='port') composePortrait();
+else composeBanner();
 document.title='READY';
 </script>
 </body>
