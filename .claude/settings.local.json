@@ -70,7 +70,8 @@
       "Bash(QA_URL=http://localhost:4173/ QA_SHOT=__TRACKED_VAR__/qa-shot.png node __TRACKED_VAR__/qa-smoke.mjs)",
       "Bash(npx --yes @playwright/mcp@latest --help)",
       "Bash([ -f \"$P\" ])",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(powershell.exe -NoProfile -Command '\\(Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess | Select-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }')"
     ]
   }
 }

@@ -316,10 +316,7 @@
       }
 
       #rebirth-badge {
-        position: fixed;
-        left: clamp(8px, 2vw, 16px);
-        bottom: clamp(8px, 2vh, 16px);
-        z-index: 12;
+        align-self: flex-start;
         display: none;
         max-width: 48vw;
         padding: 8px 10px;
@@ -587,6 +584,59 @@
         flex-direction: column;
         gap: 8px;
         pointer-events: none;
+      }
+      #rebirth-progress {
+        position: fixed;
+        right: clamp(8px, 2vw, 16px);
+        bottom: clamp(8px, 2vw, 16px);
+        z-index: 12;
+        min-width: clamp(118px, 30vw, 168px);
+        max-width: 46vw;
+        padding: 8px 11px;
+        text-align: right;
+        background: rgba(12, 12, 20, 0.85);
+        border: 1px solid rgba(191, 0, 255, 0.5);
+        border-radius: 12px;
+        backdrop-filter: blur(6px);
+        pointer-events: none;
+      }
+      #rebirth-progress .rp-label {
+        display: block;
+        font-size: clamp(8px, 2.1vw, 10px);
+        letter-spacing: 1.2px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.55);
+      }
+      #rebirth-progress .rp-bar {
+        margin: 5px 0 4px;
+        height: 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+      #rebirth-progress .rp-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #7a00cc, #bf00ff);
+        box-shadow: 0 0 8px rgba(191, 0, 255, 0.7);
+        transition: width 0.25s ease;
+      }
+      #rebirth-progress .rp-text {
+        font-size: clamp(11px, 2.6vw, 13px);
+        font-weight: 800;
+        color: #d9a6ff;
+      }
+      #rebirth-progress.ready {
+        border-color: rgba(0, 255, 170, 0.7);
+      }
+      #rebirth-progress.ready .rp-fill {
+        background: linear-gradient(90deg, #00cc88, #00ffaa);
+        box-shadow: 0 0 9px rgba(0, 255, 170, 0.75);
+      }
+      #rebirth-progress.ready .rp-text {
+        color: #5effc8;
+        text-shadow: 0 0 8px rgba(0, 255, 170, 0.6);
       }
       .boost-btn {
         pointer-events: auto;
@@ -862,6 +912,7 @@
       </div>
 
       <div id="boosts">
+        <div id="rebirth-badge"></div>
         <button class="boost-btn" id="boost-money">
           <span class="boost-ad">AD</span>
           <span class="boost-label">2× Money · 60s</span>
@@ -870,6 +921,12 @@
           <span class="boost-ad">AD</span>
           <span class="boost-label">Golden Surge · 30s</span>
         </button>
+      </div>
+
+      <div id="rebirth-progress">
+        <span class="rp-label">NEXT REBIRTH</span>
+        <div class="rp-bar"><div class="rp-fill"></div></div>
+        <span class="rp-text"></span>
       </div>
     </div>
 
@@ -892,8 +949,6 @@
         <button id="start-btn">START CRUSHING</button>
       </div>
     </div>
-
-    <div id="rebirth-badge"></div>
 
     <div id="rebirth-overlay">
       <div class="rebirth-head">

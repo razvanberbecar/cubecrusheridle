@@ -60,4 +60,15 @@ Tailored automations live in `.claude/` (generated via the `claude-code-setup` p
 ## Status (as of last session, 2026-06-26)
 **Complete and launch-ready.** Builds clean. **Visuals done** (warehouse environment + decorations browser-verified — see `Screenshot.png`). **CrazyGames QA compliance verified.** SDK lifecycle, save, and **ads (interstitial + rewarded — "2× Money" and "Golden Surge" buttons)** all wired and working. Background music/SFX done. **Cover art done** — `icon_512.png` (512×512) + `banner_1200x630.png` (1200×630), redone 2026-06-26 as stylized game scenes (press crushing a neon cube on the hazard conveyor) with reworked branding. Generated from a self-contained Canvas2D script rendered via headless Chromium (not kept in repo; regenerate from scratch if needed).
 
-Nothing left to build. Remaining items are submission-only (upload to CrazyGames portal, real-device fps spot-check, confirm live ad fill).
+**QA re-verified 2026-06-26** via `/crazygames-qa` against the production `dist/` bundle (headless Chromium, full play loop): build clean, **5.1 MB** bundle, **zero console errors**, **zero external requests** beyond the CrazyGames SDK, SDK lifecycle + ads + save + sitelock all correct, renders correctly. Verdict: **PASS**.
+
+Polish/fixes landed this session (all building clean):
+- **WebGL guard** (`main.js`): renderer creation wrapped in try/catch — devices without WebGL get a graceful "Couldn't start the 3D engine" message + `loadingStop()` instead of a black screen / uncaught throw.
+- **Favicon 404 silenced** (`index.html`): added `<link rel="icon" href="data:," />` so the console is clean (the only console error was the auto-requested favicon).
+- **Rebirth badge collision fixed** (`index.html`): `#rebirth-badge` moved into the `#boosts` flex column (was `position:fixed` on the same bottom-left corner as the ad buttons) so it stacks cleanly above the "2× Money"/"Golden Surge" buttons at any screen size.
+- **Next-rebirth progress HUD** (`index.html` `#rebirth-progress` + `ui.js` `refreshRebirthProgress`): bottom-right block showing a progress bar + "$X to go" toward `rebirthThreshold` (turns teal "Rebirth ready ✦" when `money >= threshold`). Updated each frame from `refreshMoney` (guarded against redundant DOM writes).
+- **Textures left uncompressed (deliberate):** the heavy files are 1024² RGB **normal maps** on the press; JPG/downscale would visibly degrade the hero object and the bundle is only 5.1 MB / 50 MB cap, so not worth it. Lossless-only if ever revisited.
+
+Nothing left to build for launch. Remaining items are submission-only (upload to CrazyGames portal, real-device fps spot-check, confirm live ad fill).
+
+**Planned next feature: Daily Prize** (7-day login-reward cycle, button under the balance) — full implementation spec in **`DAILY_PRIZE_PLAN.md`**. Deferred to a fresh session for full budget; build it from that plan.

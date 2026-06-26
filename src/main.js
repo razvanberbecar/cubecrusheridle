@@ -56,7 +56,16 @@ async function boot() {
   };
 
   const canvas = document.getElementById('game-canvas');
-  const { scene, camera, renderer } = createScene(canvas);
+  let sceneCtx;
+  try {
+    sceneCtx = createScene(canvas);
+  } catch (e) {
+    loadingStop();
+    document.body.innerHTML =
+      '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a0f;color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:24px"><div style="max-width:420px"><div style="font-size:20px;font-weight:700;margin-bottom:10px">Couldn\'t start the 3D engine</div><div style="font-size:15px;line-height:1.5;opacity:.8">Your browser or device may not support WebGL. Try updating your browser, enabling hardware acceleration, or switching to a different one.</div></div></div>';
+    return;
+  }
+  const { scene, camera, renderer } = sceneCtx;
   createEnvironment(scene);
   createDecorations(scene);
   const press = createPress(scene);

@@ -29,8 +29,14 @@ export function initUI(onPurchase, onRebirth) {
   const comboEl = document.getElementById('combo');
   const comboCountEl = comboEl.querySelector('.combo-count');
   const comboMultEl = comboEl.querySelector('.combo-mult');
+  const rebirthProgEl = document.getElementById('rebirth-progress');
+  const rpFill = rebirthProgEl.querySelector('.rp-fill');
+  const rpText = rebirthProgEl.querySelector('.rp-text');
 
   let lastMoneyText = '';
+  let lastRpText = '';
+  let lastRpPct = -1;
+  let lastRpReady = null;
   const rows = new Map(); // upgrade.id -> { btn, levelEl, costEl }
 
   // ---- Build the upgrade rows once ----
@@ -180,6 +186,28 @@ export function initUI(onPurchase, onRebirth) {
       moneyEl.textContent = txt;
       lastMoneyText = txt;
       if (panelOpen) refreshAffordability();
+    }
+    refreshRebirthProgress();
+  }
+
+  function refreshRebirthProgress() {
+    const threshold = gameState.rebirthThreshold;
+    const ready = gameState.money >= threshold;
+    const pct = Math.round(Math.max(0, Math.min(1, gameState.money / threshold)) * 1000) / 10;
+    if (pct !== lastRpPct) {
+      rpFill.style.width = pct + '%';
+      lastRpPct = pct;
+    }
+    const txt = ready
+      ? 'Rebirth ready ✦'
+      : formatMoney(threshold - gameState.money) + ' to go';
+    if (txt !== lastRpText) {
+      rpText.textContent = txt;
+      lastRpText = txt;
+    }
+    if (ready !== lastRpReady) {
+      rebirthProgEl.classList.toggle('ready', ready);
+      lastRpReady = ready;
     }
   }
 
